@@ -256,11 +256,21 @@ if (!failed) {
 	console.log("  wall band (left/right)                 :", layout.band);
 	console.log("  tiles found                            :", layout.count);
 	console.log("  every tile inside 0-100%               :", layout.inside);
-	console.log("  every tile capped at 26% x 34%         :", layout.capped);
+	console.log("  every tile capped at 21% x 26%         :", layout.capped);
 	console.log("  no two tiles overlap                   :", layout.disjoint);
 	console.log("  sizes are not uniform                  :", layout.uneven);
+	console.log("  tilts are not uniform                  :", layout.tilted);
+	console.log("  tops are not on a shared baseline      :", layout.scattered);
+	console.log("  every photo hangs from its own thread  :", layout.hung, `(${layout.threads})`);
 	console.log("  tiles cover well under the whole panel :", layout.coverage);
 	if (!layout.ok) process.exitCode = 1;
+
+	console.log("--- shortcut ---");
+	const shortcut = checkShortcut();
+	console.log("  a recorder is rendered                 :", shortcut.recorder);
+	console.log("  it shows the default combination       :", shortcut.label, `(${shortcut.text})`);
+	console.log("  it is not armed until clicked          :", shortcut.disarmed);
+	if (!shortcut.recorder || !shortcut.label || !shortcut.disarmed) process.exitCode = 1;
 
 	console.log("--- visual verification ---");
 	console.log("  NOT AVAILABLE: no browser control in this environment.");
@@ -291,14 +301,24 @@ function percent(value) {
 	return Number.isFinite(number) ? number : null;
 }
 
+function degrees(value) {
+	if (typeof value !== "string" || !value.endsWith("deg")) return null;
+	const number = Number(value.slice(0, -3));
+	return Number.isFinite(number) ? number : null;
+}
+
 function checkLayout() {
 	const entry = registrations.find((item) => item.registration.name === "shell.overlay");
 	const tree = entry.component({ children: undefined });
 	let wall = null;
+	let threads = 0;
 	const tiles = [];
 	walk(tree, (node) => {
 		const className = node.props?.className;
 		if (className === "agg-wall") wall = node;
+		// The hanging thread is what turns a floating rectangle into a print
+		// pinned to a wall; one per photograph, always.
+		if (className === "agg-thread") threads += 1;
 		if (className === "agg-cell") {
 			const style = node.props?.style ?? {};
 			const rect = {
@@ -306,21 +326,37 @@ function checkLayout() {
 				top: percent(style.top),
 				width: percent(style.width),
 				height: percent(style.height),
+				tilt: degrees(style["--agg-tilt"]),
 			};
 			if (rect.left !== null && rect.top !== null && rect.width !== null && rect.height !== null) tiles.push(rect);
 		}
 	});
 
+	// A tilted rectangle sticks out past its own box, so every geometric check
+	// uses the rotated bounding box — the same one placements() collided with.
+	const box = (tile) => {
+		const rad = (Math.abs(tile.tilt ?? 0) * Math.PI) / 180;
+		const cos = Math.cos(rad);
+		const sin = Math.sin(rad);
+		const w = tile.width * cos + tile.height * sin;
+		const h = tile.width * sin + tile.height * cos;
+		const cx = tile.left + tile.width / 2;
+		const cy = tile.top + tile.height / 2;
+		return { left: cx - w / 2, top: cy - h / 2, width: w, height: h };
+	};
+
 	const band = wall ? `${wall.props.style.left}/${wall.props.style.right}` : "missing";
-	const inside = tiles.every(
-		(tile) => tile.left >= 0 && tile.top >= 0 && tile.left + tile.width <= 100.001 && tile.top + tile.height <= 100.001,
+	const boxes = tiles.map(box);
+	const inside = boxes.every(
+		(b) => b.left >= -0.001 && b.top >= -0.001 && b.left + b.width <= 100.001 && b.top + b.height <= 100.001,
 	);
-	const capped = tiles.every((tile) => tile.width <= 26.001 && tile.height <= 34.001);
+	// "Not too big": a photo on a wall, not a slab.
+	const capped = tiles.every((tile) => tile.width <= 21.001 && tile.height <= 26.001);
 	let disjoint = true;
-	for (let a = 0; a < tiles.length; a += 1) {
-		for (let b = a + 1; b < tiles.length; b += 1) {
-			const one = tiles[a];
-			const two = tiles[b];
+	for (let a = 0; a < boxes.length; a += 1) {
+		for (let b = a + 1; b < boxes.length; b += 1) {
+			const one = boxes[a];
+			const two = boxes[b];
 			const apart =
 				one.left + one.width <= two.left ||
 				two.left + two.width <= one.left ||
@@ -330,13 +366,45 @@ function checkLayout() {
 		}
 	}
 	const area = tiles.reduce((total, tile) => total + (tile.width * tile.height) / 100, 0);
-	const coverage = area < 55;
-	// "Not too regular": the widths and heights must actually differ, and the
-	// tiles must not sit on a shared baseline grid.
+	// An ornament covers a small share of the wall; a mosaic would fill it.
+	const coverage = area < 40;
+	// "Not too regular": sizes differ, and the tiles do not share a baseline
+	// or a tilt — nothing may line up with anything else.
 	const widths = new Set(tiles.map((tile) => Math.round(tile.width * 10)));
 	const heights = new Set(tiles.map((tile) => Math.round(tile.height * 10)));
-	const uneven = widths.size > Math.max(2, Math.floor(tiles.length / 3)) && heights.size > Math.max(2, Math.floor(tiles.length / 3));
+	const tilts = new Set(tiles.map((tile) => Math.round((tile.tilt ?? 0) * 10)));
+	const tops = new Set(tiles.map((tile) => Math.round(tile.top)));
+	const uneven =
+		widths.size >= Math.max(3, Math.floor(tiles.length * 0.6)) &&
+		heights.size >= Math.max(3, Math.floor(tiles.length * 0.6));
+	const tilted = tilts.size >= Math.max(3, Math.floor(tiles.length * 0.6));
+	const scattered = tops.size >= Math.max(3, Math.floor(tiles.length * 0.7));
+	// Every photograph hangs from its own thread — the thread count is the
+	// cheap proof that the "pinned to a wall" reading survives refactors.
+	const hung = threads === tiles.length && threads > 0;
 	const ok =
-		band === "20%/20%" && tiles.length >= 12 && inside && capped && disjoint && uneven && coverage;
-	return { band, count: tiles.length, inside, capped, disjoint, uneven, coverage, ok };
+		band === "20%/20%" && tiles.length >= 8 && inside && capped && disjoint && uneven && tilted && scattered && hung && coverage;
+	return { band, count: tiles.length, threads, inside, capped, disjoint, uneven, tilted, scattered, hung, coverage, ok };
+}
+
+/* ---- shortcut assertions -------------------------------------------- */
+// The shortcut is the one thing the wall deliberately listens for, so it is
+// worth proving the recorder actually reaches the settings page with a
+// combination that can fire — a shortcut nobody can find is a dead control.
+function checkShortcut() {
+	const entry = registrations.find((item) => item.registration.name === "settings.section");
+	const tree = entry.component({ children: undefined });
+	let button = null;
+	walk(tree, (node) => {
+		const className = node.props?.className;
+		if (typeof className === "string" && className.includes("agg-key")) button = node;
+	});
+	if (button === null) return { recorder: false, label: false, disarmed: false, text: "" };
+	const text = [button.children].flat(3).filter((part) => typeof part === "string").join("");
+	return {
+		recorder: true,
+		label: /^[A-Za-z0-9]+(\+[A-Za-z0-9]+)+$/u.test(text),
+		disarmed: button.props?.["data-armed"] === "0",
+		text,
+	};
 }
