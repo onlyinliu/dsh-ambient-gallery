@@ -299,6 +299,7 @@ if (!failed) {
 		const scene = checkScene();
 		console.log("  a scenery layer is rendered            :", scene.scenery);
 		console.log("  its rectangular video screen is there  :", scene.screen);
+		console.log("  it renders a real photograph at low opacity :", scene.photo);
 		if (!scene.ok) process.exitCode = 1;
 	} else {
 	console.log("--- layout ---");
@@ -457,22 +458,25 @@ function checkLayout() {
 }
 
 /* ---- scenery assertions --------------------------------------------- */
-// The three scenery modes have no photographs at all: they are a CSS scene
-// plus one rectangular screen kept free for video. Rendered with a fake
-// profile, the tree has to contain exactly that.
+// The three scenery modes use real photograph backdrops plus one rectangular
+// screen kept free for video. Rendered with a fake profile, the tree has to
+// contain exactly that, with the photo at a finite low opacity.
 function checkScene() {
 	const entry = registrations.find((item) => item.registration.name === "shell.overlay");
 	const tree = entry.component({ children: undefined });
 	let scenery = false;
 	let screen = false;
-	let screenVideo = false;
+	let photo = false;
 	walk(tree, (node) => {
 		const className = node.props?.className;
 		if (typeof className === "string" && className.startsWith("agg-mode ")) scenery = true;
 		if (className === "agg-screen") screen = true;
-		if (node.type === "video" && node.props?.className === undefined) screenVideo = true;
+		if (node.type === "img" && className === "agg-scene-photo") {
+			const opacity = node.props?.style?.opacity;
+			photo = typeof opacity === "number" && Number.isFinite(opacity);
+		}
 	});
-	return { scenery, screen, ok: scenery && screen };
+	return { scenery, screen, photo, ok: scenery && screen && photo };
 }
 
 /* ---- surface assertions --------------------------------------------- */
@@ -518,10 +522,10 @@ function checkSurfaces() {
 			if (node.props?.className === "agg-thumb") frameCount += 1;
 		});
 	}
-	// The three scenery modes are pure CSS + DOM, so the stylesheet is the
-	// proof they exist at all: one class per scene, plus the video screen
-	// every one of them has to keep free.
-	const scenes = [".agg-karaoke", ".agg-cockpit", ".agg-orbit", ".agg-earth", ".agg-screen"].filter((name) =>
+	// The three scenery modes use real photograph backdrops, so the stylesheet
+	// is the proof they exist at all: one class per scene, the photo element,
+	// plus the video screen every one of them has to keep free.
+	const scenes = [".agg-karaoke", ".agg-cockpit", ".agg-orbit", ".agg-scene-photo", ".agg-screen"].filter((name) =>
 		css.includes(name),
 	).length;
 	const modes = modeCount === 4;
