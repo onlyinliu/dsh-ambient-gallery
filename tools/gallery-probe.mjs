@@ -198,6 +198,17 @@ if (videoImport.status === 200) {
 const fresh = await postState({ tiles: { "7": { frames: imported.slice(0, 5).map(full) } } });
 check("a fresh cell accepts 5 frames", (fresh.body?.tiles?.["7"]?.frames ?? []).length === 5);
 
+/* ---- 9. the three real scene backdrops ship and are served -------- */
+for (const name of ["karaoke", "cockpit", "orbit"]) {
+	const sceneRes = await fetch(`${BASE_URL}${BASE}/scenes/${name}.jpg`);
+	const buf = sceneRes.ok ? await sceneRes.arrayBuffer() : new ArrayBuffer(0);
+	check(`GET /scenes/${name}.jpg returns a JPEG`, sceneRes.status === 200 && sceneRes.headers.get("content-type") === "image/jpeg" && buf.byteLength > 10000, `status=${sceneRes.status} bytes=${buf.byteLength}`);
+}
+const sceneTraversal = await fetch(`${BASE_URL}${BASE}/scenes/..%2f..%2fstate.json`);
+check("scene path traversal is refused", sceneTraversal.status === 404, `status=${sceneTraversal.status}`);
+const scenePost = await fetch(`${BASE_URL}${BASE}/scenes/orbit.jpg`, { method: "POST" });
+check("POST /scenes is refused", scenePost.status === 405, `status=${scenePost.status}`);
+
 /* ---- cleanup: leave no test frames behind -------------------------- */
 await postState({ tiles: {} });
 let removed = 0;
