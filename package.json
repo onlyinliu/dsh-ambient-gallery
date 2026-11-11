@@ -1,8 +1,8 @@
 {
   "name": "dsh-ambient-gallery",
-  "version": "0.1.1",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Ambient Gallery: a breathing wall of pictures behind the main panel, with up to twenty rotating images per window and one discreet window that plays a local video.",
+  "description": "Ambient Gallery: a string of photographs hung behind the main panel — each a different size at its own angle, five photographs shipped to fill the wall on first run, up to twenty rotating images per photo, and one photo that quietly plays a local video until a shortcut asks it to step back.",
   "license": "MIT",
   "author": "liutianqi",
   "homepage": "https://github.com/onlyinliu/dsh-ambient-gallery#readme",
@@ -45,6 +45,7 @@
     "locale/zh.json",
     "icon.svg",
     "assets/icon-180.png",
+    "assets/photos",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
