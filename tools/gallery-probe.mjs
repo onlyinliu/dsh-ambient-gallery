@@ -127,12 +127,23 @@ check("config merge applies the new key", Math.abs((merge.body?.config?.opacity 
 check("config merge leaves tiles alone", (merge.body?.tiles?.[CELL]?.frames ?? []).length === 20, `cell ${CELL} frames=${(merge.body?.tiles?.[CELL]?.frames ?? []).length}`);
 
 /* ---- 4. out-of-range values are clamped, not rejected -------------- */
-const clamped = await postState({ config: { count: 99, opacity: 4, intervalMs: 10, videoCell: 999 } });
+const clamped = await postState({ config: { count: 99, opacity: 4, intervalMs: 10, videoKey: "nope" } });
 const cfg = clamped.body?.config ?? {};
-check("count clamped to 16", cfg.count === 16, `count=${cfg.count}`);
+check("count clamped to 24", cfg.count === 24, `count=${cfg.count}`);
 check("opacity clamped to 1", cfg.opacity === 1, `opacity=${cfg.opacity}`);
 check("intervalMs clamped to >=1500", cfg.intervalMs === 1500, `intervalMs=${cfg.intervalMs}`);
-check("videoCell clamped into range", cfg.videoCell === 15, `videoCell=${cfg.videoCell}`);
+check("an unusable shortcut falls back", cfg.videoKey === "Shift+V", `videoKey=${cfg.videoKey}`);
+
+/* ---- 4a. mode and shape are whitelisted, not free text ------------- */
+// Both are painted straight into the DOM, so an unknown value must fall back
+// to the shipped default instead of reaching the wall.
+const modeBad = await postState({ config: { mode: "disco", shape: "star" } });
+check("an unknown mode falls back", modeBad.body?.config?.mode === "gallery", `mode=${modeBad.body?.config?.mode}`);
+check("an unknown shape falls back", modeBad.body?.config?.shape === "rect", `shape=${modeBad.body?.config?.shape}`);
+const modeOk = await postState({ config: { mode: "orbit", shape: "hexagon" } });
+check("a known mode round-trips", modeOk.body?.config?.mode === "orbit", `mode=${modeOk.body?.config?.mode}`);
+check("a known shape round-trips", modeOk.body?.config?.shape === "hexagon", `shape=${modeOk.body?.config?.shape}`);
+await postState({ config: { mode: "gallery", shape: "rect" } });
 
 /* ---- 4b. the shortcut is validated to something that can fire ------ */
 // A combination without a modifier would swallow ordinary typing, and a key
