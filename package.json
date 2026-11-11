@@ -1,8 +1,8 @@
 {
   "name": "dsh-ambient-gallery",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
-  "description": "Ambient Gallery: a string of photographs hung behind the main panel — each a different size at its own angle, five photographs shipped to fill the wall on first run, up to twenty rotating images per photo, and one photo that quietly plays a local video until a shortcut asks it to step back.",
+  "description": "Ambient Gallery: a string of photographs hung behind the main panel — uneven sizes at their own angles, twenty real landscape photographs shipped to fill the wall on first run, up to twenty rotating images per frame, six frame shapes, three code-drawn scenes (karaoke lights, cockpit HUD, Earth from orbit) each keeping a small rectangular screen free for a local video, and one shortcut that sends the video back into the rotation.",
   "license": "MIT",
   "author": "liutianqi",
   "homepage": "https://github.com/onlyinliu/dsh-ambient-gallery#readme",
