@@ -1,6 +1,6 @@
 {
   "name": "dsh-ambient-gallery",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Ambient Gallery: a breathing wall of pictures behind the main panel, with up to twenty rotating images per window and one discreet window that plays a local video.",
   "license": "MIT",
