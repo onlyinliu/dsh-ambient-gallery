@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Ambient Gallery (dsh-ambient-gallery)",
-    "description": "Scattered picture tiles behind the main panel — uneven by design, kept to the middle 20-80% of the width, up to twenty rotating images per tile, generated art by default, your own local pictures on a click, and one discreet tile that plays a local video."
+    "description": "A string of photographs hung behind the main panel — each a different size, each at its own angle, all with room to breathe, kept to the middle 20-80% of the width. Five photographs ship with the plugin and are pinched onto the wall on first run; every photo rotates up to twenty images, your own local pictures go on with a click, and one of them can quietly play a local video until a single shortcut asks it to step back and join the rotation."
   }
 }
