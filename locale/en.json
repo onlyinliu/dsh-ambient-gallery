@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Ambient Gallery (dsh-ambient-gallery)",
-    "description": "A string of photographs hung behind the main panel — each a different size at its own angle, all with room to breathe, kept to the middle 20-80% of the width. Twenty real landscape photographs ship with the plugin and are pinned onto the wall on first run; every frame rotates up to twenty images, each can be cut into a circle, square, triangle, diamond or hexagon, and the whole wall can switch to one of three real scene photographs — karaoke lights, a fighter cockpit, or Earth from orbit — each keeping a small rectangular screen free for a local video."
+    "description": "A string of photographs hung behind the main panel — each a different size at its own angle, all with room to breathe, kept to the middle 20-80% of the width. Twenty real landscape photographs ship with the plugin and are pinned onto the wall on first run; every frame rotates up to twenty images, the three lowest frames accept a local video, and one shortcut sends the video back into the rotation."
   }
 }

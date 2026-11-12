@@ -1,8 +1,8 @@
 {
   "name": "dsh-ambient-gallery",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "type": "module",
-  "description": "Ambient Gallery: a string of photographs hung behind the main panel — uneven sizes at their own angles, twenty real landscape photographs shipped to fill the wall on first run, up to twenty rotating images per frame, six frame shapes, three real scene photographs (karaoke lights, a fighter cockpit, Earth from orbit) each keeping a small rectangular screen free for a local video, and one shortcut that sends the video back into the rotation.",
+  "description": "Ambient Gallery: a string of photographs hung behind the main panel — uneven sizes at their own angles, twenty real landscape photographs shipped to fill the wall on first run, up to twenty rotating images per frame, rectangles only (the only shape), the three lowest frames playing a local video, and one shortcut that sends the video back into the rotation.",
   "license": "MIT",
   "author": "liutianqi",
   "homepage": "https://github.com/onlyinliu/dsh-ambient-gallery#readme",
@@ -46,7 +46,6 @@
     "icon.svg",
     "assets/icon-180.png",
     "assets/photos",
-    "assets/scenes",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"

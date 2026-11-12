@@ -294,14 +294,6 @@ if (!failed) {
 	// Rendering above is what starts the profile request (an effect inside the
 	// settings page); let it land before the frame list is inspected.
 	await new Promise((resolve) => setTimeout(resolve, 50));
-	if (CANNED_MODE !== "gallery") {
-		console.log("--- scene ---");
-		const scene = checkScene();
-		console.log("  a scenery layer is rendered            :", scene.scenery);
-		console.log("  its rectangular video screen is there  :", scene.screen);
-		console.log("  it renders a real photograph at low opacity :", scene.photo);
-		if (!scene.ok) process.exitCode = 1;
-	} else {
 	console.log("--- layout ---");
 	const layout = checkLayout();
 	console.log("  wall band (left/right)                 :", layout.band);
@@ -315,24 +307,19 @@ if (!failed) {
 	console.log("  every photo hangs from its own thread  :", layout.hung, `(${layout.threads})`);
 	console.log("  tiles cover well under the whole panel :", layout.coverage);
 	if (!layout.ok) process.exitCode = 1;
-	}
 
 	console.log("--- surfaces ---");
 	const surfaces = checkSurfaces();
 	console.log("  no floating control panel in the css   :", surfaces.noPanel);
 	console.log("  no floating toggle button in the css   :", surfaces.noToggle);
 	console.log("  the wall never captures the pointer    :", surfaces.clickThrough);
-	console.log("  all three scenes are styled            :", surfaces.scenes);
-	console.log("  mode picker offers all four looks      :", surfaces.modes, `(${surfaces.modeCount})`);
-	console.log(
-		CANNED_MODE === "gallery" ? "  shape picker offers all six cuts       :" : "  shape picker is absent for scenery      :",
-		surfaces.shapes,
-		`(${surfaces.shapeCount})`,
-	);
+	console.log("  no scene css left in the stylesheet    :", surfaces.scenes);
+	console.log("  no look picker in the settings page    :", surfaces.modes, `(${surfaces.modeCount})`);
+	console.log("  shape picker is gone (rectangles only) :", true, "(0)");
 	console.log("  every tile has a thumbnail row         :", surfaces.rows, `(${surfaces.rowCount} rows)`);
 	console.log("  every listed frame has exactly one x   :", surfaces.removable, `(${surfaces.frameCount} frames, ${surfaces.removeCount} x)`);
 	console.log("  the canned profile reached the page    :", surfaces.frames, `(${surfaces.frameCount})`);
-	console.log("  every tile has add-image + add-video   :", surfaces.pickers, `(${surfaces.pickerCount} buttons)`);
+	console.log("  3 video rows + 20 picture rows         :", surfaces.pickers, `(${surfaces.pickerCount} buttons)`);
 	if (!surfaces.ok) process.exitCode = 1;
 
 	console.log("--- shortcut ---");
@@ -457,28 +444,6 @@ function checkLayout() {
 	return { band, count: tiles.length, threads, inside, capped, disjoint, uneven, tilted, scattered, hung, coverage, ok };
 }
 
-/* ---- scenery assertions --------------------------------------------- */
-// The three scenery modes use real photograph backdrops plus one rectangular
-// screen kept free for video. Rendered with a fake profile, the tree has to
-// contain exactly that, with the photo at a finite low opacity.
-function checkScene() {
-	const entry = registrations.find((item) => item.registration.name === "shell.overlay");
-	const tree = entry.component({ children: undefined });
-	let scenery = false;
-	let screen = false;
-	let photo = false;
-	walk(tree, (node) => {
-		const className = node.props?.className;
-		if (typeof className === "string" && className.startsWith("agg-mode ")) scenery = true;
-		if (className === "agg-screen") screen = true;
-		if (node.type === "img" && className === "agg-scene-photo") {
-			const opacity = node.props?.style?.opacity;
-			photo = typeof opacity === "number" && Number.isFinite(opacity);
-		}
-	});
-	return { scenery, screen, photo, ok: scenery && screen && photo };
-}
-
 /* ---- surface assertions --------------------------------------------- */
 // The user's report was about interaction, so the interaction promises are
 // checked as directly as this environment allows: the stylesheet must not
@@ -498,20 +463,31 @@ function checkSurfaces() {
 	const segs = [];
 	const tiles = [];
 	let pickerCount = 0;
+	let videoPickerCount = 0;
 	let thumbButtons = 0;
 	walk(tree, (node) => {
 		const className = node.props?.className;
 		if (className === "agg-seg") segs.push(node);
 		if (className === "agg-tile") tiles.push(node);
 		if (className === "agg-thumb-x") thumbButtons += 1;
-		if (className === "agg-btn" && node.props?.["data-small"] === "1") pickerCount += 1;
+		if (className === "agg-btn" && node.props?.["data-small"] === "1") {
+			pickerCount += 1;
+			// The add-video button is the only small button whose subtree
+			// contains an svg (IconVideo); add-image uses IconPlus, also an
+			// svg — so distinguish by the viewBox the two icons declare.
+			let hasRect = false;
+			walk(node, (inner) => {
+				if (inner?.type === "rect") hasRect = true;
+			});
+			// IconVideo draws its screen as a <rect>; IconPlus is paths only.
+			if (hasRect) videoPickerCount += 1;
+		}
 	});
-	// Two pickers: which look, and (only for the photo wall) how it is cut.
+	// m10311: no picker remains at all — neither look nor shape. The wall is
+	// the only surface and rectangles are its only cut (m09795).
 	const modeSeg = segs[0];
-	const shapeSeg = segs[1];
 	const segCount = (seg) => (seg?.children ?? seg?.props?.children ?? []).flat(3).length;
 	const modeCount = segCount(modeSeg);
-	const shapeCount = segCount(shapeSeg);
 	// A frame is "listed" when its thumbnail appears; each listed frame must
 	// own exactly one × so the user can delete that one picture and nothing
 	// else. In this sandbox the profile is empty, so both counts are zero —
@@ -522,25 +498,27 @@ function checkSurfaces() {
 			if (node.props?.className === "agg-thumb") frameCount += 1;
 		});
 	}
-	// The three scenery modes use real photograph backdrops, so the stylesheet
-	// is the proof they exist at all: one class per scene, the photo element,
-	// plus the video screen every one of them has to keep free.
-	const scenes = [".agg-karaoke", ".agg-cockpit", ".agg-orbit", ".agg-scene-photo", ".agg-screen"].filter((name) =>
+	// m10311: the three scenery looks are gone — no scene class, no photo
+	// element, no video-screen chrome may remain in the stylesheet.
+	const sceneClasses = [".agg-karaoke", ".agg-cockpit", ".agg-orbit", ".agg-scene-photo", ".agg-screen"].filter((name) =>
 		css.includes(name),
-	).length;
-	const modes = modeCount === 4;
-	// The shape picker belongs to the photo wall and is deliberately absent in
-	// the scenery modes — there is nothing there to cut into a hexagon. So the
-	// expectation depends on which look this run asked for.
-	const shapes = CANNED_MODE === "gallery" ? shapeCount === 6 : shapeCount === 0;
+	);
+	const scenes = sceneClasses.length === 0;
+	// m10311: the look picker is gone entirely, so the settings page must
+	// not render a single segmented control.
+	const modes = segs.length === 0;
+	// The shape picker is gone in every mode: the wall is rectangles only.
+	const shapes = true;
 	const rows = tiles.length === 20;
 	const removable = thumbButtons === frameCount;
-	const pickers = pickerCount === tiles.length * 2;
+	// m10076: only the three bottom rows offer "add video"; every row keeps
+	// "add picture". So: 20 add-image buttons + exactly 3 add-video buttons.
+	const pickers = pickerCount === tiles.length + 3 && videoPickerCount === 3;
 	return {
 		noPanel,
 		noToggle,
 		clickThrough,
-		scenes: scenes === 5,
+		scenes,
 		modes,
 		shapes,
 		rows,
@@ -548,16 +526,16 @@ function checkSurfaces() {
 		frames: frameCount === 3,
 		pickers,
 		modeCount,
-		shapeCount,
 		rowCount: tiles.length,
 		frameCount,
 		removeCount: thumbButtons,
 		pickerCount,
+		videoPickerCount,
 		ok:
 			noPanel &&
 			noToggle &&
 			clickThrough &&
-			scenes === 5 &&
+			scenes &&
 			modes &&
 			shapes &&
 			rows &&
