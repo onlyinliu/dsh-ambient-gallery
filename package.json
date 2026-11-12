@@ -1,0 +1,94 @@
+{
+  "name": "dsh-ambient-gallery",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Ambient Gallery: a string of photographs hung behind the main panel — uneven sizes at their own angles, twenty real landscape photographs shipped to fill the wall on first run, up to twenty rotating images per frame, rectangles only (the only shape), the three lowest frames playing a local video, and one shortcut that sends the video back into the rotation.",
+  "license": "MIT",
+  "author": "liutianqi",
+  "homepage": "https://github.com/onlyinliu/dsh-ambient-gallery#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onlyinliu/dsh-ambient-gallery.git"
+  },
+  "bugs": {
+    "url": "https://github.com/onlyinliu/dsh-ambient-gallery/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh-desktop",
+    "ui",
+    "wallpaper",
+    "gallery",
+    "ambient",
+    "decoration"
+  ],
+  "main": "lib/index.js",
+  "icon": "./icon.svg",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json",
+    "./locale/en.json": "./locale/en.json",
+    "./locale/zh.json": "./locale/zh.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "locale/en.json",
+    "locale/zh.json",
+    "icon.svg",
+    "assets/icon-180.png",
+    "assets/photos",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=18",
+    "dsh": ">=0.2.0-rc.2 <0.3.0-0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1 || >=4.0.5-0 <5",
+    "@deepseek-ai/dsh-client-locale": ">=0.1.0-rc.6 <0.3.0-0",
+    "@deepseek-ai/dsh-client-runtime": ">=0.1.0-rc.6 <0.3.0-0",
+    "react": "^18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-locale": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-client-runtime": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  }
+}
